@@ -63,7 +63,9 @@ class QLearningAgent(object):
 
         return episode_returns
 
+
 class SARSAAgent(object):
+
     def __init__(self, n_actions, n_states, epsilon=0.1, alpha=0.1, gamma=1.0):
         self.n_actions = n_actions
         self.n_states = n_states
@@ -71,66 +73,20 @@ class SARSAAgent(object):
         self.alpha = alpha
         self.gamma = gamma
         # TO DO: Initialize variables if necessary
-
-        self.Q = np.zeros((n_states, n_actions)) #Initialize the action values Q(s,a) to 0.
         
     def select_action(self, state):
         # TO DO: Implement policy
-
-        #Implement an ϵ-greedy policy for selecting an action.
         action = None
-
-        best_action = np.argmax(self.Q[state, :])
-
-        #from our previous assignment
-        probabilities = np.multiply(np.ones(self.n_actions), np.divide(self.epsilon, (self.n_actions -1))) #making every choice probability the same
-        probabilities[best_action] = (1 - self.epsilon) #assigning the naive agents value to the probabilities, sums up to 1
-
-        action = np.random.choice(self.n_actions, p = probabilities)
-
         return action
         
-    def update(self, state, action, reward, next_state, next_action, done): # Augment arguments if necessary
+    def update(self, state, action, reward, done): # Augment arguments if necessary
         # TO DO: Implement SARSA update
-
-        #sarsa update Q(St, At) = Q(St, At) + alpha*[Rt+1 + gamma*Q(St+1, At+1) - Q(St, At)] 
-        predict = self.Q[state, action]
-        if done:
-            target = reward
-        else:
-            target = reward + self.gamma * self.Q[next_state, next_action]
-        
-        self.Q[state, action] += self.alpha * (target - predict)
+        pass
 
     def train(self, n_episodes):
         # TO DO: Implement the agent loop that trains for n_episodes. 
         # Return a vector with the the cumulative reward (=return) per episode
-
         episode_returns = []
-        env = SCE.ShortcutEnvironment()
-
-        for _ in range(n_episodes):
-            env.reset()
-            state = env.y * env.c + env.x
-            cumulative_reward = 0
-            
-            action = self.select_action(state)
-
-            while not env.isdone:
-                reward = env.step(action)
-                next_state = env.y * env.c + env.x
-                next_action = self.select_action(next_state)
-                done = env.isdone
-
-                self.update(state, action, reward, next_state, next_action, done)
-
-                state = next_state
-                action = next_action
-                
-                cumulative_reward += reward
-
-            episode_returns.append(cumulative_reward)
-
         return episode_returns
 
 
