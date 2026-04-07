@@ -1,5 +1,9 @@
-class QLearningAgent(object):
+import numpy as np
+#import matplotlib as plt
+import scipy as sci
+import ShortCutEnvironment as SCE
 
+class QLearningAgent(object):
     def __init__(self, n_actions, n_states, epsilon=0.1, alpha=0.1, gamma=1.0):
         self.n_actions = n_actions
         self.n_states = n_states
@@ -7,20 +11,56 @@ class QLearningAgent(object):
         self.alpha = alpha
         self.gamma = gamma
         # TO DO: Initialize variables if necessary
+        self.Q = np.zeros((n_states, n_actions)) # -> q values
+        self.n = np.zeros((n_states, n_actions)) # -> action counter
+        
         
     def select_action(self, state):
         # TO DO: Implement policy
-        action = None
+        best_action = np.argmax(self.Q[state]) #Naive agent copied
+
+        probabilities = np.multiply(np.ones(self.n_actions), np.divide(self.epsilon, (self.n_actions -1))) #making every choice probability the same
+        probabilities[best_action] = (1 - self.epsilon)#assigning the naive agents value to the probabilities, sums up to 1
+
+        action = np.random.choice(self.n_actions, p = probabilities)#check out link above
+
         return action
         
-    def update(self, state, action, reward, done): # Augment arguments if necessary
+    def update(self, state, next_state, action, reward, done): # Augment arguments if necessary
         # TO DO: Implement Q-learning update
-        pass
+        self.n[state, action] += 1
+        
+        future = (self.gamma * np.max(self.Q[next_state]))
+        
+        if done:
+            future = 0
+        
+        self.Q[(state, action)] = self.Q[(state, action)] + self.alpha * ((reward + future) - self.Q[(state, action)])
     
     def train(self, n_episodes):
         # TO DO: Implement the agent loop that trains for n_episodes. 
         # Return a vector with the the cumulative reward (=return) per episode
         episode_returns = []
+        env = SCE.ShortcutEnvironment()
+
+        for _ in range(n_episodes):
+            env.reset()
+            state = env.y * env.c + env.x
+            cumulative_reward = 0
+
+            while not env.isdone:
+                action = self.select_action(state)
+                reward = env.step(action)                   
+                next_state = env.y * env.c + env.x         
+                done = env.isdone                            
+
+                self.update(state, next_state, action, reward, done)
+
+                state = next_state
+                cumulative_reward += reward
+
+            episode_returns.append(cumulative_reward)
+
         return episode_returns
 
 
