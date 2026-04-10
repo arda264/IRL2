@@ -223,21 +223,94 @@ class nStepSARSAAgent(object):
         self.alpha = alpha
         self.gamma = gamma
         # TO DO: Initialize variables if necessary
-        
+        self.Q = np.zeros((n_states, n_actions)) #Initialize the action values Q(s,a) to 0.
+
     def select_action(self, state):
         # TO DO: Implement policy
+        #Implement an ϵ-greedy policy for selecting an action.
         action = None
+
+        best_action = np.argmax(self.Q[state, :])
+
+        #from our previous assignment
+        probabilities = np.multiply(np.ones(self.n_actions), np.divide(self.epsilon, (self.n_actions -1))) #making every choice probability the same
+        probabilities[best_action] = (1 - self.epsilon) #assigning the naive agents value to the probabilities, sums up to 1
+
+        action = np.random.choice(self.n_actions, p = probabilities)
+
         return action
         
-    def update(self, states, actions, rewards, done): # Augment arguments if necessary
+    def update(self, states, actions, n, rewards, done): # Augment arguments if necessary
         # TO DO: Implement n-step SARSA update
-        pass
-    
+        
+        state = states[0]
+        action = actions[0]
+
+        G = 0.0
+
+        lim = min(n, len(rewards))
+        for i in range(lim):
+            G += (self.gamma ** i) * rewards[i]
+
+        if (len(rewards) > n) and (not done):
+            G += (self.gamma ** n) * self.Q[states[n], actions[n]]
+              
+        
+        self.Q[state, action] += self.alpha * (G - self.Q[state, action])  
+
     def train(self, n_episodes):
         # TO DO: Implement the agent loop that trains for n_episodes. 
         # Return a vector with the the cumulative reward (=return) per episode
         episode_returns = []
-        return episode_returns  
+        env = SCE.ShortcutEnvironment()
+        
+        
+        for _ in range(n_episodes):
+            env.reset()
+            state = env.y * env.c + env.x
+            cumulative_reward = 0
+
+            action = self.select_action(state)
+
+            states = [state]
+            actions = [action]
+            rewards = []
+
+            while not env.isdone:
+                reward = env.step(action)
+                next_state = env.y * env.c + env.x
+                done = env.isdone
+
+                cumulative_reward += reward
+                rewards.append(reward)
+                states.append(next_state)
+
+                if not done:
+                    next_action = self.select_action(next_state)
+                    actions.append(next_action)
+
+                if len(rewards) >= self.n:
+                    self.update(states[:self.n + 1], actions[:self.n + 1], self.n, rewards[:self.n], False)
+
+                    states.pop(0)
+                    actions.pop(0)
+                    rewards.pop(0)
+
+                if not done:
+                    state = next_state
+                    action = next_action
+
+            while len(rewards) > 0:
+                self.update(states, actions, self.n, rewards, True)
+
+                states.pop(0)
+                actions.pop(0)
+                rewards.pop(0)
+
+                episode_returns.append(cumulative_reward)
+
+            
+            return episode_returns
     
     
     
